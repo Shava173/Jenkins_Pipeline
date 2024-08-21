@@ -1,45 +1,68 @@
 pipeline {
     agent any
+
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/Shava173/Jenkins_Pipeline.git'
+                // Виконуємо перевірку версій з SCM (Git)
+                git url: 'https://github.com/Shava173/Jenkins_Pipeline.git', branch: 'main'
             }
         }
+
+        // Додавання етапу перевірки файлів
+        stage('Verify Files') {
+            steps {
+                echo 'Перевіряємо наявність файлів у робочій директорії Jenkins:'
+                sh 'ls -la'
+                echo 'Перевіряємо наявність файлів у директорії my-app:'
+                sh 'ls -la my-app/'
+            }
+        }
+
+        // Додавання етапу перевірки наявності Maven
+        stage('Check Maven') {
+            steps {
+                sh 'mvn --version'  // Перевірка наявності Maven та його версії
+            }
+        }
+
         stage('Build') {
             steps {
-                dir('my-app') {  // Зміна для виконання команди всередині директорії my-app
-                    sh 'mvn clean package'
+                dir('my-app') {
+                    sh 'mvn clean package -X'  // Виконання Maven з деталізованим виводом
                 }
             }
         }
+
         stage('Test') {
             steps {
-                dir('my-app') {  // Зміна для виконання команди всередині директорії my-app
+                dir('my-app') {
                     sh 'mvn test'
                 }
             }
             post {
                 always {
-                    dir('my-app') {  // Зміна для того, щоб Jenkins шукав звіти тестування всередині my-app
-                        junit 'target/surefire-reports/*.xml'
+                    dir('my-app') {
+                        junit '**/target/surefire-reports/*.xml'
                     }
                 }
             }
         }
+
         stage('Deploy') {
             steps {
-                echo 'Deploying to server...'
-                // Додайте команди для деплою, якщо необхідно
+                echo 'Deploying application...'
+                // Додайте тут команди для деплою вашого застосунку
             }
         }
     }
+
     post {
         success {
-            echo 'Build and tests completed successfully!'
+            echo 'Pipeline completed successfully.'
         }
         failure {
-            echo 'Build or tests failed!'
+            echo 'Pipeline failed. Please check the logs.'
         }
     }
 }
